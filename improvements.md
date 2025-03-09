@@ -1,4 +1,4 @@
-1. Ensure to identify data precision using LLM
-2. All the fields are identified as objects
-3. detect encoding and use the detected corresponding
-4.
+1. Improve precision on the numerical fields.
+2. Most of the string and date fields are identified as objects.
+3. Detect encoding and use the corresponding decoding strategy (ascii, utf, iso).
+4. PHI detection accuracy must be improved.
