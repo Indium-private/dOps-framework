@@ -12,7 +12,7 @@ from presidio_analyzer import AnalyzerEngine
 from sentence_transformers import SentenceTransformer, util
 
 class DataCrawler:
-    def __init__(self, file_path, output_dir, similarity_threshold = 0.7):
+    def __init__(self, file_path, output_dir, similarity_threshold = 0.6):
         """Initializes the DataCrawler with paths.
         
         Args:
@@ -131,9 +131,10 @@ class DataCrawler:
         if schema:
             self.save_to_json(schema)
 
-# Example usage
-file_path = r"D:\Indium Internal Work\Accelerators\testing datasets\crm_sales_opportunities\sales_teams.csv"
-output_dir = r"D:\Indium Internal Work\Accelerators\inferred_schemas"
+if __name__ == "__main__":
+    # Example usage
+    file_path = r"testing datasets\northwind_traders\Northwind Traders\customers.csv"
+    output_dir = r"D:\Indium Internal Work\Accelerators\inferred_schemas"
 
-crawler = DataCrawler(file_path=file_path, output_dir=output_dir)
-crawler.run()
+    crawler = DataCrawler(file_path=file_path, output_dir=output_dir)
+    crawler.run()
