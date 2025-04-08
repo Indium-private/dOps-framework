@@ -13,49 +13,35 @@ DATA_TYPE_MAPPING = {
 }
 
 class DDLGenerator:
-    def __init__(self, schema_dir, database_name):
-        """Initializes the DDL Generator with schema directory and database name.
+    def __init__(self, schema_path, database_name, output_dir="generated_ddl"):
+        """
+        Initializes the DDL Generator with schema file/directory, database name, and output directory.
         
         Args:
-            schema_dir (str): Directory containing JSON schema files.
+            schema_path (str or Path): Path to a JSON file or directory containing schema files.
             database_name (str): Target database name.
+            output_dir (str or Path): Directory to save generated DDL files.
         """
-        self.schema_dir = Path(schema_dir)
+        self.schema_path = Path(schema_path)
         self.database_name = database_name
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)  # ensure the folder exists
 
     def load_schema(self, schema_file):
-        """Loads a JSON schema file.
-        
-        Args:
-            schema_file (Path): Path to the schema JSON file.
-        
-        Returns:
-            dict: Parsed schema dictionary.
-        """
         with schema_file.open("r", encoding="utf-8") as f:
             return json.load(f)
 
     def map_dtype(self, dtype):
-        """Maps Pandas/PySpark data types to ANSI SQL types."""
-        return DATA_TYPE_MAPPING.get(dtype, "TEXT")  # Default to TEXT for unknown types
+        return DATA_TYPE_MAPPING.get(dtype, "TEXT")
 
     def generate_ddl(self, schema):
-        """Generates a CREATE TABLE IF NOT EXISTS statement based on the schema.
-
-        Args:
-            schema (dict): Parsed schema dictionary.
-
-        Returns:
-            str: ANSI SQL-compliant CREATE TABLE IF NOT EXISTS statement.
-        """
-        table_name = schema["file_type"] + "_table"  # Default table name
+        table_name = schema["file_type"] + "_table"
         columns_definitions = []
-        
+
         for column in schema["columns"]:
             col_name = column["name"]
             col_type = self.map_dtype(column["dtype"])
             is_nullable = "NULL" if column["null_count"] > 0 else "NOT NULL"
-
             columns_definitions.append(f"    {col_name} {col_type} {is_nullable}")
 
         columns_sql = ",\n".join(columns_definitions)
@@ -67,25 +53,28 @@ CREATE TABLE IF NOT EXISTS {self.database_name}.{table_name} (
 """.strip()
         return ddl
 
-    def save_ddl(self, ddl, output_file):
-        """Saves the generated DDL to a file."""
-        with output_file.open("w", encoding="utf-8") as f:
+    def save_ddl(self, ddl, schema_file):
+        output_file_name = schema_file.stem + ".sql"
+        output_file_path = self.output_dir / output_file_name
+        with output_file_path.open("w", encoding="utf-8") as f:
             f.write(ddl + "\n")
-        print(f"DDL saved: {output_file}")
+        print(f"DDL saved: {output_file_path}")
 
     def run(self):
-        """Processes all schema JSON files and generates DDL statements."""
-        schema_files = list(self.schema_dir.glob("*.json"))
+        if self.schema_path.is_file():
+            schema_files = [self.schema_path]
+        elif self.schema_path.is_dir():
+            schema_files = list(self.schema_path.glob("*.json"))
+        else:
+            print("Invalid schema path provided.")
+            return
 
         for schema_file in schema_files:
             schema = self.load_schema(schema_file)
-            ddl_statement = self.generate_ddl(schema)
+            ddl = self.generate_ddl(schema)
+            self.save_ddl(ddl, schema_file)
 
-            output_ddl_file = schema_file.with_suffix(".sql")
-            self.save_ddl(ddl_statement, output_ddl_file)
-
-# Example usage
-schema_directory = Path(r"D:\Indium Internal Work\Accelerators\inferred_schemas")
+schema_input = r"inferred_schemas\admin_staff_branch_csv.json"
 database_name = "my_database"
-ddl_generator = DDLGenerator(schema_directory, database_name)
+ddl_generator = DDLGenerator(schema_input, database_name)
 ddl_generator.run()
